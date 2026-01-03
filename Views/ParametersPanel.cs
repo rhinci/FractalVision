@@ -5,7 +5,7 @@ using FractalVision.Enums;
 using FractalVision.Models;
 using FractalVision.Views;
 
-namespace FractalVision.Controls
+namespace FractalVision.Views
 {
     public class ParametersPanel : Panel
     {
