@@ -129,6 +129,8 @@ namespace FractalVision.Views
             int height = bitmap.Height;
             int maxIterations = _calculator.MaxIterations;
 
+            Color[,] colors = new Color[height, width];
+
             Parallel.For(0, height, y =>
             {
                 for (int x = 0; x < width; x++)
@@ -139,10 +141,17 @@ namespace FractalVision.Views
                     );
 
                     int iterations = _calculator.GetIterationCount(c);
-                    Color color = _palette.GetColor(iterations, maxIterations);
-                    bitmap.SetPixel(x, y, color);
+                    colors[y, x] = _palette.GetColor(iterations, maxIterations);
                 }
             });
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    bitmap.SetPixel(x, y, colors[y, x]);
+                }
+            }
         }
 
         public async Task ZoomToPointAsync(int pixelX, int pixelY, double zoomFactor = 2.0)
