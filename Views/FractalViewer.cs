@@ -18,6 +18,9 @@ namespace FractalVision.Views
         private bool _isRendering;
         private RenderQuality _renderQuality;
 
+        private ZoomRectangle _zoomRectangle = new ZoomRectangle();
+        private Pen _selectionPen = new Pen(Color.Yellow, 2) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
+
         public event Action RenderingStarted = delegate { };
         public event Action RenderingFinished = delegate { };
         public event Action<ComplexNumber> MouseCoordinatesChanged = delegate { };
@@ -33,10 +36,14 @@ namespace FractalVision.Views
             _renderQuality = RenderQuality.Standard;
             _isRendering = false;
 
+            _selectionPen.DashPattern = new float[] { 5, 5 };
+
             _fractalBitmap = new Bitmap(_parameters.Width, _parameters.Height);
 
-            this.MouseClick += FractalViewer_MouseClick;
+            this.MouseDown += FractalViewer_MouseDown;
             this.MouseMove += FractalViewer_MouseMove;
+            this.MouseUp += FractalViewer_MouseUp;
+            this.MouseClick += FractalViewer_MouseClick;
             this.Size = new Size(_parameters.Width, _parameters.Height);
         }
 
@@ -178,17 +185,30 @@ namespace FractalVision.Views
             }
         }
 
-        private void FractalViewer_MouseClick(object? sender, MouseEventArgs e)
+        private async void FractalViewer_MouseClick(object? sender, MouseEventArgs e)
         {
             if (_isRendering) return;
 
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Control)
             {
-                _ = ZoomToPointAsync(e.X, e.Y, 2.0);
+                await ZoomToPointAsync(e.X, e.Y, 2.0);
             }
             else if (e.Button == MouseButtons.Right)
             {
-                _ = ZoomToPointAsync(e.X, e.Y, 0.5);
+                await ZoomToPointAsync(e.X, e.Y, 0.5);
+            }
+        }
+
+        private void FractalViewer_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (_isRendering) return;
+
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys != Keys.Control)
+            {
+                _zoomRectangle.StartPoint = e.Location;
+                _zoomRectangle.EndPoint = e.Location;
+                _zoomRectangle.IsSelecting = true;
+                this.Invalidate();
             }
         }
 
@@ -196,6 +216,33 @@ namespace FractalVision.Views
         {
             ComplexNumber complexCoord = _parameters.PixelToComplex(e.X, e.Y);
             MouseCoordinatesChanged(complexCoord);
+
+            if (_zoomRectangle.IsSelecting)
+            {
+                _zoomRectangle.EndPoint = e.Location;
+                this.Invalidate();
+            }
+        }
+
+        private async void FractalViewer_MouseUp(object? sender, MouseEventArgs e)
+        {
+            if (_isRendering) return;
+
+            if (e.Button == MouseButtons.Left && _zoomRectangle.IsSelecting)
+            {
+                _zoomRectangle.EndPoint = e.Location;
+                _zoomRectangle.IsSelecting = false;
+
+                if (_zoomRectangle.IsValid())
+                {
+                    await ZoomToRectangleAsync(_zoomRectangle.GetRectangle());
+                }
+                else
+                {
+                    _zoomRectangle.Reset();
+                    this.Invalidate();
+                }
+            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -205,6 +252,12 @@ namespace FractalVision.Views
             if (_fractalBitmap != null)
             {
                 e.Graphics.DrawImage(_fractalBitmap, 0, 0, this.Width, this.Height);
+
+                if (_zoomRectangle.IsSelecting && _zoomRectangle.IsValid())
+                {
+                    var rect = _zoomRectangle.GetRectangle();
+                    e.Graphics.DrawRectangle(_selectionPen, rect);
+                }
 
                 if (_isRendering)
                 {
@@ -238,9 +291,27 @@ namespace FractalVision.Views
             if (disposing)
             {
                 _fractalBitmap?.Dispose();
+                _selectionPen?.Dispose();
             }
 
             base.Dispose(disposing);
+        }
+
+
+        public async Task ZoomToRectangleAsync(Rectangle rect)
+        {
+            if (_isRendering || rect.Width <= 0 || rect.Height <= 0) return;
+
+            int centerX = rect.X + rect.Width / 2;
+            int centerY = rect.Y + rect.Height / 2;
+
+            double zoomFactor = Math.Max(
+                (double)_parameters.Width / rect.Width,
+                (double)_parameters.Height / rect.Height
+            ) * 0.8;
+
+            await ZoomToPointAsync(centerX, centerY, zoomFactor);
+            _zoomRectangle.Reset();
         }
     }
 }
