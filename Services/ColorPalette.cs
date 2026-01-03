@@ -4,22 +4,17 @@ using FractalVision.Enums;
 
 namespace FractalVision.Services
 {
-
-    /// Преобразует количество итераций в красивый цвет
     public class ColorPalette
     {
-        private Color[] _colors; 
+        private Color[] _colors = Array.Empty<Color>();
         private ColorScheme _paletteType;
         private int _colorCount = 256;
 
-
-        /// Создать палитру по умолчанию (Радуга)
         public ColorPalette()
         {
             _paletteType = ColorScheme.Rainbow;
             CreateRainbowPalette();
         }
-
 
         public ColorPalette(ColorScheme paletteType)
         {
@@ -27,14 +22,12 @@ namespace FractalVision.Services
             CreatePalette(paletteType);
         }
 
-        /// Создать палитру с пользовательскими цветами
         public ColorPalette(Color[] customColors)
         {
             _paletteType = ColorScheme.Custom;
             _colors = customColors;
             _colorCount = customColors.Length;
         }
-
 
         public ColorScheme PaletteType
         {
@@ -59,36 +52,20 @@ namespace FractalVision.Services
             }
         }
 
-        public Color[] Colors
-        {
-            get { return _colors; }
-        }
-
- 
-
-
-
+        public Color[] Colors => _colors;
 
         public Color GetColor(int iteration, int maxIterations)
         {
-            // Если точка внутри множества - черный
-            if (iteration == -1)
-            {
-                return Color.Black;
-            }
+            if (iteration == -1) return Color.Black;
 
             double ratio = (double)iteration / maxIterations;
-
             double smoothRatio = 1 - Math.Pow(1 - ratio, 0.5);
-
             int colorIndex = (int)(smoothRatio * (_colorCount - 1));
-
             colorIndex = Math.Max(0, Math.Min(_colorCount - 1, colorIndex));
 
             return _colors[colorIndex];
         }
 
-        /// упрощенный расчет
         public Color GetFastColor(int iteration, int maxIterations)
         {
             if (iteration == -1) return Color.Black;
@@ -106,26 +83,18 @@ namespace FractalVision.Services
                 case ColorScheme.Rainbow:
                     CreateRainbowPalette();
                     break;
-
                 case ColorScheme.Fire:
                     CreateFirePalette();
                     break;
-
                 case ColorScheme.Ocean:
                     CreateOceanPalette();
                     break;
-
                 case ColorScheme.Forest:
                     CreateForestPalette();
                     break;
-
                 case ColorScheme.Grayscale:
                     CreateGrayscalePalette();
                     break;
-
-                case ColorScheme.Custom:
-                    break;
-
                 default:
                     CreateRainbowPalette();
                     break;
@@ -150,7 +119,6 @@ namespace FractalVision.Services
             for (int i = 0; i < _colorCount; i++)
             {
                 double ratio = (double)i / (_colorCount - 1);
-
                 int r, g, b;
 
                 if (ratio < 0.33)
@@ -186,11 +154,9 @@ namespace FractalVision.Services
             for (int i = 0; i < _colorCount; i++)
             {
                 double ratio = (double)i / (_colorCount - 1);
-
                 int r = (int)(50 * (1 - ratio));
                 int g = (int)(100 + 155 * ratio);
                 int b = (int)(200 + 55 * ratio);
-
                 _colors[i] = Color.FromArgb(r, g, b);
             }
         }
@@ -202,11 +168,9 @@ namespace FractalVision.Services
             for (int i = 0; i < _colorCount; i++)
             {
                 double ratio = (double)i / (_colorCount - 1);
-
                 int r = (int)(50 * ratio);
                 int g = (int)(100 + 155 * ratio);
                 int b = (int)(50 * ratio);
-
                 _colors[i] = Color.FromArgb(r, g, b);
             }
         }
@@ -230,15 +194,12 @@ namespace FractalVision.Services
             for (int i = 0; i < _colorCount; i++)
             {
                 double ratio = (double)i / (_colorCount - 1);
-
                 int r = Lerp(startColor.R, endColor.R, ratio);
                 int g = Lerp(startColor.G, endColor.G, ratio);
                 int b = Lerp(startColor.B, endColor.B, ratio);
-
                 _colors[i] = Color.FromArgb(r, g, b);
             }
         }
-
 
         private Color HsvToRgb(double h, double s, double v)
         {
@@ -272,8 +233,7 @@ namespace FractalVision.Services
 
         public string GetPaletteInfo()
         {
-            return $"Тип: {_paletteType}, Цветов: {_colorCount}, " +
-                   $"Первый: {_colors[0]}, Последний: {_colors[_colorCount - 1]}";
+            return $"Тип: {_paletteType}, Цветов: {_colorCount}";
         }
     }
 }
