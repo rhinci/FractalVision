@@ -1,6 +1,7 @@
-using System.Windows.Forms;
+using FractalVision.Controls;
 using FractalVision.Services;
 using FractalVision.Views;
+using System.Windows.Forms;
 
 namespace FractalVision
 {
@@ -8,28 +9,35 @@ namespace FractalVision
     {
         private FractalViewer _fractalViewer = null!;
         private ToolbarManager _toolbarManager = null!;
+        private ParametersPanel _parametersPanel = null!;
 
         public MainForm()
         {
-            InitializeComponent();  // Этот метод в Designer.cs
+            InitializeComponent();
             InitializeCustomComponents();
         }
 
         private void InitializeCustomComponents()
         {
-            // Создаем FractalViewer
             _fractalViewer = new FractalViewer();
             _fractalViewer.Dock = DockStyle.Fill;
 
-            // Создаем ToolbarManager
+            _parametersPanel = new ParametersPanel(_fractalViewer);
+
             _toolbarManager = new ToolbarManager(_fractalViewer);
             _toolbarManager.ToolStrip.Dock = DockStyle.Top;
 
-            // Добавляем элементы на форму
-            this.Controls.Add(_fractalViewer);
+            var viewerContainer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(5)
+            };
+            viewerContainer.Controls.Add(_fractalViewer);
+
+            this.Controls.Add(_parametersPanel);
+            this.Controls.Add(viewerContainer);
             this.Controls.Add(_toolbarManager.ToolStrip);
 
-            // Генерируем первый фрактал
             _ = _fractalViewer.GenerateFractalAsync();
         }
     }
